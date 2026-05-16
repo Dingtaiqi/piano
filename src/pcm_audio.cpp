@@ -185,8 +185,8 @@ static void handleFrame(uint8_t cmd, const uint8_t* payload, uint16_t len) {
 void pcmProcessSerial() {
   static unsigned long lastReadyTime = 0;
 
-  // 每 200ms 上报缓冲区状态
-  if (millis() - lastReadyTime > 200) {
+  // 播放中每 200ms 上报缓冲区状态，空闲时不发避免阻塞 Serial
+  if (playing && millis() - lastReadyTime > 200) {
     sendReady();
     lastReadyTime = millis();
   }
