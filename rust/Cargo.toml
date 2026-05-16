@@ -1,0 +1,13 @@
+[package]
+name = "piano_native"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+serialport = "4.9"
+thiserror = "2"
+serde_json = "1"
+serde = { version = "1", features = ["derive"] }

@@ -1,0 +1,50 @@
+# Flutter
+.dart_tool/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+pubspec.lock
+.metadata
+
+# Rust
+rust/target/
+rust/Cargo.lock
+
+# PlatformIO
+.pio/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Claude
+.claude/
+
+# FFmpeg binaries
+ffmpeg/
+
+# Distribution output
+dist/
+
+# Compiled binaries
+*.exe
+*.dll
+*.so
+*.dylib
+*.bin
+
+# Generated Flutter data
+data/
+
+# Generated placeholder READMEs
+lib/README
+test/README
+include/
+
+# Build artifacts
+compile_commands.json
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,87 @@
+name: Build macOS Release
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  build:
+    runs-on: macos-latest  # GitHub 免费提供 macOS runner
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ---- Rust 原生库 ----
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build Rust (x86_64)
+        run: |
+          cd rust
+          cargo build --release --target x86_64-apple-darwin
+
+      - name: Build Rust (aarch64)
+        run: |
+          cd rust
+          cargo build --release --target aarch64-apple-darwin
+
+      - name: Create universal dylib
+        run: |
+          cd rust
+          mkdir -p target/release
+          lipo -create \
+            target/x86_64-apple-darwin/release/libpiano_native.dylib \
+            target/aarch64-apple-darwin/release/libpiano_native.dylib \
+            -output target/release/libpiano_native.dylib
+
+      # ---- FFmpeg ----
+      - name: Install ffmpeg
+        run: brew install ffmpeg
+
+      - name: Copy ffmpeg binaries
+        run: |
+          mkdir -p ffmpeg
+          cp $(which ffmpeg) ffmpeg/
+          cp $(which ffprobe) ffmpeg/
+
+      # ---- Flutter ----
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Enable macOS desktop
+        run: flutter config --enable-macos-desktop
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Flutter macOS
+        run: flutter build macos --release
+
+      # ---- 打包 ----
+      - name: Copy files into app bundle
+        run: |
+          APP="build/macos/Build/Products/Release/eda_piano.app"
+          mkdir -p "$APP/Contents/MacOS/ffmpeg"
+          cp ffmpeg/ffmpeg "$APP/Contents/MacOS/ffmpeg/"
+          cp ffmpeg/ffprobe "$APP/Contents/MacOS/ffmpeg/"
+          cp rust/target/release/libpiano_native.dylib "$APP/Contents/MacOS/"
+          # 固件也放进去
+          cp .pio/build/nodemcuv2/firmware.bin "$APP/Contents/MacOS/" 2>/dev/null || true
+
+      - name: Create DMG
+        run: |
+          APP="build/macos/Build/Products/Release/eda_piano.app"
+          mkdir dist
+          cp -R "$APP" dist/
+          cp .pio/build/nodemcuv2/firmware.bin dist/ 2>/dev/null || true
+          hdiutil create -volname "EDA Piano" -srcfolder dist -ov dist/EDA-Piano-macOS.dmg
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: EDA-Piano-macOS
+          path: dist/
