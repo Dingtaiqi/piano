@@ -68,15 +68,13 @@ jobs:
           cp ffmpeg/ffprobe "$APP/Contents/MacOS/"
           cp rust/target/release/libpiano_native.dylib "$APP/Contents/MacOS/"
 
-      - name: Create DMG
+      - name: Package app
         run: |
           APP="build/macos/Build/Products/Release/eda_piano.app"
-          rm -rf dist && mkdir dist
-          cp -R "$APP" dist/
-          hdiutil create -volname "EDA Piano" -srcfolder dist -ov -format UDZO EDA-Piano-macOS.dmg
+          ditto -c -k --keepParent "$APP" EDA-Piano-macOS.zip
 
-      - name: Upload DMG
+      - name: Upload app
         uses: actions/upload-artifact@v4
         with:
           name: EDA-Piano-macOS
-          path: EDA-Piano-macOS.dmg
+          path: EDA-Piano-macOS.zip
