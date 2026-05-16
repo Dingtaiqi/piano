@@ -16,16 +16,14 @@ jobs:
       # ---- Rust 原生库 ----
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-apple-darwin,aarch64-apple-darwin
 
       - name: Build Rust (x86_64)
-        run: |
-          cd rust
-          cargo build --release --target x86_64-apple-darwin
+        run: cd rust && cargo build --release --target x86_64-apple-darwin
 
       - name: Build Rust (aarch64)
-        run: |
-          cd rust
-          cargo build --release --target aarch64-apple-darwin
+        run: cd rust && cargo build --release --target aarch64-apple-darwin
 
       - name: Create universal dylib
         run: |
