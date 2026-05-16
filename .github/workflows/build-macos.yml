@@ -67,15 +67,12 @@ jobs:
           cp ffmpeg/ffmpeg "$APP/Contents/MacOS/"
           cp ffmpeg/ffprobe "$APP/Contents/MacOS/"
           cp rust/target/release/libpiano_native.dylib "$APP/Contents/MacOS/"
-          # 固件也放进去
-          cp .pio/build/nodemcuv2/firmware.bin "$APP/Contents/MacOS/" 2>/dev/null || true
 
       - name: Create DMG
         run: |
           APP="build/macos/Build/Products/Release/eda_piano.app"
           rm -rf dist && mkdir dist
           cp -R "$APP" dist/
-          cp .pio/build/nodemcuv2/firmware.bin dist/ 2>/dev/null || true
           hdiutil create -volname "EDA Piano" -srcfolder dist -ov -format UDZO EDA-Piano-macOS.dmg
 
       - name: Upload DMG
