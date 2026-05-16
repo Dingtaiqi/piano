@@ -3,7 +3,6 @@ import '../models/player_state.dart';
 import '../services/player_controller.dart';
 import 'serial_provider.dart';
 
-/// 播放器状态
 class PlayerNotifier extends StateNotifier<PlayerState> {
   PlayerController? _controller;
   final Ref _ref;
@@ -13,15 +12,16 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
   PlayerController? get controller => _controller;
 
   /// 选择音频文件
-  Future<void> selectFile(String filePath) async {
+  Future<String?> selectFile(String filePath) async {
     final serialState = _ref.read(serialProvider);
+
     if (serialState is! SerialConnected) {
-      state = state.copyWith(
+      state = PlayerState(
         status: PlayStatus.idle,
         filePath: filePath,
         fileName: filePath.split('\\').last.split('/').last,
       );
-      return;
+      return null; // 未连串口不是错误，只是不能播放
     }
 
     final svcNotifier = _ref.read(serialProvider.notifier);
@@ -30,8 +30,16 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
     try {
       await _controller!.selectFile(filePath);
       state = _controller!.state;
+      return null;
     } catch (e) {
-      state = state.copyWith(status: PlayStatus.idle);
+      final msg = e.toString().replaceFirst('Exception: ', '');
+      state = PlayerState(
+        status: PlayStatus.idle,
+        filePath: filePath,
+        fileName: filePath.split('\\').last.split('/').last,
+        errorMessage: msg,
+      );
+      return msg;
     }
   }
 

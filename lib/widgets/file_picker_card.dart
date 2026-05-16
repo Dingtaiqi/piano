@@ -100,7 +100,8 @@ class FilePickerCard extends ConsumerWidget {
                   allowedExtensions: ['mp3', 'wav', 'flac', 'ogg', 'm4a', 'aac'],
                 );
                 if (result != null && result.files.single.path != null) {
-                  ref.read(playerProvider.notifier).selectFile(result.files.single.path!);
+                  final notifier = ref.read(playerProvider.notifier);
+                  await notifier.selectFile(result.files.single.path!);
                 }
               },
               icon: const Icon(Icons.folder_open_rounded),
@@ -115,8 +116,31 @@ class FilePickerCard extends ConsumerWidget {
                   children: [
                     Icon(Icons.info_outline, size: 16, color: cs.error),
                     const SizedBox(width: 6),
-                    Text('请先连接串口', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.error)),
+                    Text('请先连接串口，再选一次文件', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.error)),
                   ],
+                ),
+              ),
+
+            // 解码错误提示
+            if (playerState.errorMessage != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: cs.errorContainer,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.error_outline, size: 16, color: cs.onErrorContainer),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(playerState.errorMessage!,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.onErrorContainer)),
+                      ),
+                    ],
+                  ),
                 ),
               ),
           ],

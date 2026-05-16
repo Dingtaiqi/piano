@@ -10,6 +10,8 @@ class PlayerState {
   final int sampleRate;
   final int channels;
 
+  final String? errorMessage;
+
   const PlayerState({
     this.status = PlayStatus.idle,
     this.filePath,
@@ -19,6 +21,7 @@ class PlayerState {
     this.volume = 0.8,
     this.sampleRate = 16000,
     this.channels = 1,
+    this.errorMessage,
   });
 
   PlayerState copyWith({
@@ -30,6 +33,7 @@ class PlayerState {
     double? volume,
     int? sampleRate,
     int? channels,
+    String? errorMessage,
   }) {
     return PlayerState(
       status: status ?? this.status,
@@ -40,6 +44,7 @@ class PlayerState {
       volume: volume ?? this.volume,
       sampleRate: sampleRate ?? this.sampleRate,
       channels: channels ?? this.channels,
+      errorMessage: errorMessage ?? this.errorMessage,
     );
   }
 
