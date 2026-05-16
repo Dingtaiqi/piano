@@ -73,13 +73,13 @@ jobs:
       - name: Create DMG
         run: |
           APP="build/macos/Build/Products/Release/eda_piano.app"
-          mkdir dist
+          rm -rf dist && mkdir dist
           cp -R "$APP" dist/
           cp .pio/build/nodemcuv2/firmware.bin dist/ 2>/dev/null || true
-          hdiutil create -volname "EDA Piano" -srcfolder dist -ov dist/EDA-Piano-macOS.dmg
+          hdiutil create -volname "EDA Piano" -srcfolder dist -ov -format UDZO EDA-Piano-macOS.dmg
 
-      - name: Upload artifact
+      - name: Upload DMG
         uses: actions/upload-artifact@v4
         with:
           name: EDA-Piano-macOS
-          path: dist/
+          path: EDA-Piano-macOS.dmg
