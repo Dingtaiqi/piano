@@ -112,8 +112,7 @@ void pcmInit() {
   analogWriteRange(PWM_RANGE);
   analogWrite(BUZZER_PIN, 128); // 初始静音(中点)
 
-  // 启动 16kHz 采样率定时器
-  sampleTimer.attach_ms(1000.0 / PCM_SAMPLE_RATE, onPcmSampleTick);
+  // 定时器按需启动(收到 PLAY 命令时)，避免空闲时干扰 I2C/OLED
 }
 
 // ===== 命令处理 =====
@@ -131,11 +130,13 @@ static void handleFrame(uint8_t cmd, const uint8_t* payload, uint16_t len) {
 
     case PCM_CMD_PLAY:
       playing = true;
+      sampleTimer.attach_ms(1000.0 / PCM_SAMPLE_RATE, onPcmSampleTick);
       sendAck(PCM_CMD_PLAY);
       break;
 
     case PCM_CMD_STOP:
       playing = false;
+      sampleTimer.detach();
       readIdx = writeIdx;   // 清空缓冲区
       sendAck(PCM_CMD_STOP);
       break;

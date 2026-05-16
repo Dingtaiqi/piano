@@ -41,8 +41,9 @@ jobs:
       - name: Copy ffmpeg binaries
         run: |
           mkdir -p ffmpeg
-          cp $(which ffmpeg) ffmpeg/
-          cp $(which ffprobe) ffmpeg/
+          cp "$(readlink -f "$(which ffmpeg)")" ffmpeg/ffmpeg
+          cp "$(readlink -f "$(which ffprobe)")" ffmpeg/ffprobe
+          chmod +x ffmpeg/ffmpeg ffmpeg/ffprobe
 
       # ---- Flutter ----
       - name: Setup Flutter
@@ -63,9 +64,8 @@ jobs:
       - name: Copy files into app bundle
         run: |
           APP="build/macos/Build/Products/Release/eda_piano.app"
-          mkdir -p "$APP/Contents/MacOS/ffmpeg"
-          cp ffmpeg/ffmpeg "$APP/Contents/MacOS/ffmpeg/"
-          cp ffmpeg/ffprobe "$APP/Contents/MacOS/ffmpeg/"
+          cp ffmpeg/ffmpeg "$APP/Contents/MacOS/"
+          cp ffmpeg/ffprobe "$APP/Contents/MacOS/"
           cp rust/target/release/libpiano_native.dylib "$APP/Contents/MacOS/"
           # 固件也放进去
           cp .pio/build/nodemcuv2/firmware.bin "$APP/Contents/MacOS/" 2>/dev/null || true

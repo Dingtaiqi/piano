@@ -8,10 +8,10 @@ import 'services/audio_service.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 初始化 FFmpeg 目录
+  // 初始化 FFmpeg 目录: 依次查找 exe同目录, ffmpeg子目录, 当前目录
   final ffmpegName = Platform.isWindows ? 'ffmpeg.exe' : 'ffmpeg';
   final exeDir = File(Platform.resolvedExecutable).parent.path;
-  for (final dir in ['ffmpeg', '$exeDir/ffmpeg']) {
+  for (final dir in [exeDir, '$exeDir/ffmpeg', 'ffmpeg']) {
     if (File('$dir/$ffmpegName').existsSync()) {
       AudioService.init(dir);
       break;
