@@ -56,9 +56,6 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Add macOS platform
-        run: flutter create --platforms macos .
-
       - name: Build Flutter macOS
         run: flutter build macos --release
 
