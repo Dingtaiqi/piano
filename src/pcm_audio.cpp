@@ -108,13 +108,15 @@ void pcmProcessSerial() {
         if (rxPayloadIdx >= rxPayloadLen) parseState = WAIT_CRC;
         break;
       case WAIT_CRC: {
-        uint8_t hdr[] = {rxCmd, (uint8_t)(rxPayloadLen >> 8), (uint8_t)(rxPayloadLen & 0xFF)};
-        uint8_t expected = crc8(hdr, 3);
-        for (uint16_t i = 0; i < rxPayloadLen; i++) {
-          uint8_t mix = (expected ^ rxPayloadBuf[i]) & 0x01;
-          expected >>= 1;
-          if (mix) expected ^= 0x8C;
+        // CRC over CMD + LEN_H + LEN_L + PAYLOAD
+        uint8_t crcData[3 + 1024];
+        crcData[0] = rxCmd;
+        crcData[1] = (uint8_t)(rxPayloadLen >> 8);
+        crcData[2] = (uint8_t)(rxPayloadLen & 0xFF);
+        for (uint16_t i = 0; i < rxPayloadLen && i < 1024; i++) {
+          crcData[3 + i] = rxPayloadBuf[i];
         }
+        uint8_t expected = crc8(crcData, 3 + rxPayloadLen);
         if (b != expected) {
           sendNack(rxCmd, PCM_ERR_CRC_MISMATCH);
         } else {

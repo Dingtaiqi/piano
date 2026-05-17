@@ -9,7 +9,7 @@
 #include "pic.cpp"
 
 void setup() {
-  Serial.begin(921600);
+  Serial.begin(115200);
 
   // 初始化各个模块
   initAudio();
