@@ -57,28 +57,35 @@ class _SerialBarState extends ConsumerState<SerialBar> {
                   child: portsAsync.when(
                     data: (ports) {
                       final names = ports.map((p) => p.name).toList();
-                      return DropdownButtonFormField<String>(
-                        value: names.contains(_selectedPort) ? _selectedPort : null,
-                        isExpanded: true, isDense: true,
-                        decoration: const InputDecoration(labelText: '端口', prefixIcon: Icon(Icons.cable_rounded, size: 20),
-                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
-                        items: names.isEmpty ? null
-                            : names.map((n) => DropdownMenuItem(value: n, child: Text(n, overflow: TextOverflow.ellipsis))).toList(),
-                        onChanged: isConnected ? null : (v) => setState(() => _selectedPort = v),
+                      if (names.isEmpty) {
+                        return const TextField(enabled: false, decoration: InputDecoration(labelText: '端口 (未检测到)'));
+                      }
+                      return DropdownMenu<String>(
+                        initialSelection: names.contains(_selectedPort) ? _selectedPort : null,
+                        expandedInsets: EdgeInsets.zero,
+                        enableFilter: false,
+                        enabled: !isConnected,
+                        label: const Text('端口'),
+                        leadingIcon: const Icon(Icons.cable_rounded, size: 20),
+                        onSelected: (v) => setState(() => _selectedPort = v),
+                        dropdownMenuEntries: names.map((n) => DropdownMenuEntry(value: n, label: n)).toList(),
                       );
                     },
-                    loading: () => const SizedBox(height: 40, child: Center(child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)))),
+                    loading: () => const SizedBox(height: 56, child: Center(child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)))),
                     error: (_, __) => Text('获取失败', style: TextStyle(color: cs.error, fontSize: 12)),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   flex: 2,
-                  child: DropdownButtonFormField<int>(
-                    value: _selectedBaud, isExpanded: true, isDense: true,
-                    decoration: const InputDecoration(labelText: '波特率', contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
-                    items: defaultBaudRates.map((b) => DropdownMenuItem(value: b, child: Text('$b', style: const TextStyle(fontSize: 13)))).toList(),
-                    onChanged: isConnected ? null : (v) => setState(() => _selectedBaud = v!),
+                  child: DropdownMenu<int>(
+                    initialSelection: defaultBaudRates.contains(_selectedBaud) ? _selectedBaud : 921600,
+                    expandedInsets: EdgeInsets.zero,
+                    enableFilter: false,
+                    enabled: !isConnected,
+                    label: const Text('波特率'),
+                    onSelected: (v) => setState(() => _selectedBaud = v ?? 921600),
+                    dropdownMenuEntries: defaultBaudRates.map((b) => DropdownMenuEntry(value: b, label: '$b')).toList(),
                   ),
                 ),
                 const SizedBox(width: 8),
