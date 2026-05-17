@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/serial_port_info.dart';
 import '../providers/serial_provider.dart';
 
 const defaultBaudRates = [921600, 460800, 230400, 115200, 9600];
@@ -13,7 +12,7 @@ class SerialBar extends ConsumerStatefulWidget {
 }
 
 class _SerialBarState extends ConsumerState<SerialBar> {
-  SerialPortInfo? _selectedPort;
+  String? _selectedPort;
   int _selectedBaud = 921600;
 
   @override
@@ -56,14 +55,18 @@ class _SerialBarState extends ConsumerState<SerialBar> {
                 Expanded(
                   flex: 3,
                   child: portsAsync.when(
-                    data: (ports) => DropdownButtonFormField<SerialPortInfo>(
-                      value: _selectedPort, isExpanded: true, isDense: true,
-                      decoration: const InputDecoration(labelText: '端口', prefixIcon: Icon(Icons.cable_rounded, size: 20),
-                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
-                      items: ports.isEmpty ? null
-                          : ports.map((p) => DropdownMenuItem(value: p, child: Text(p.name, overflow: TextOverflow.ellipsis))).toList(),
-                      onChanged: isConnected ? null : (v) => setState(() => _selectedPort = v),
-                    ),
+                    data: (ports) {
+                      final names = ports.map((p) => p.name).toList();
+                      return DropdownButtonFormField<String>(
+                        value: names.contains(_selectedPort) ? _selectedPort : null,
+                        isExpanded: true, isDense: true,
+                        decoration: const InputDecoration(labelText: '端口', prefixIcon: Icon(Icons.cable_rounded, size: 20),
+                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+                        items: names.isEmpty ? null
+                            : names.map((n) => DropdownMenuItem(value: n, child: Text(n, overflow: TextOverflow.ellipsis))).toList(),
+                        onChanged: isConnected ? null : (v) => setState(() => _selectedPort = v),
+                      );
+                    },
                     loading: () => const SizedBox(height: 40, child: Center(child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)))),
                     error: (_, __) => Text('获取失败', style: TextStyle(color: cs.error, fontSize: 12)),
                   ),
@@ -84,7 +87,7 @@ class _SerialBarState extends ConsumerState<SerialBar> {
                     : FilledButton(
                         onPressed: isConnected
                             ? () => ref.read(serialProvider.notifier).disconnect()
-                            : _selectedPort != null ? () => ref.read(serialProvider.notifier).connect(_selectedPort!.name, _selectedBaud) : null,
+                            : _selectedPort != null ? () => ref.read(serialProvider.notifier).connect(_selectedPort!, _selectedBaud) : null,
                         style: FilledButton.styleFrom(minimumSize: const Size(56, 40), padding: const EdgeInsets.symmetric(horizontal: 12)),
                         child: Icon(isConnected ? Icons.link_off_rounded : Icons.link_rounded, size: 20),
                       ),
