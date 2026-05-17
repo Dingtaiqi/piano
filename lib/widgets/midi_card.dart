@@ -63,10 +63,21 @@ class _MidiCardState extends ConsumerState<MidiCard> {
       addDebugLog(ref, '发送 MELODY: ${frame1.length} 字节, payload=${payload.length}B');
       svc.write(frame1);
       await Future.delayed(const Duration(milliseconds: 200));
+      final resp1 = svc.read(32, 100);
+      if (resp1 != null) {
+        addDebugLog(ref, '响应: ${String.fromCharCodes(resp1.where((b) => b >= 32 && b < 127))} HEX=${resp1.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')}');
+      } else {
+        addDebugLog(ref, '无响应');
+      }
 
       final frame2 = buildFrame(0x11, Uint8List(0));
       addDebugLog(ref, '发送 PLAY');
       svc.write(frame2);
+      await Future.delayed(const Duration(milliseconds: 100));
+      final resp2 = svc.read(32, 100);
+      if (resp2 != null) {
+        addDebugLog(ref, '响应: ${String.fromCharCodes(resp2.where((b) => b >= 32 && b < 127))} HEX=${resp2.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')}');
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
