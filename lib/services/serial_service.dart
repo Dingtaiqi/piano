@@ -1,7 +1,7 @@
-import 'dart:convert';
 import 'dart:ffi';
 import 'dart:typed_data';
 import 'package:ffi/ffi.dart';
+import 'package:flutter_libserialport/flutter_libserialport.dart';
 import '../models/serial_port_info.dart';
 import 'native_bridge.dart';
 
@@ -12,20 +12,13 @@ class SerialService {
   bool get isOpen => _handle != null;
   String? get portName => _portName;
 
-  /// 枚举可用串口
+  /// 枚举可用串口 (使用 flutter_libserialport，更可靠)
   static List<SerialPortInfo> listPorts() {
-    final ptr = serialEnumerate();
-    if (ptr == nullptr) return [];
-    final json = ptr.toDartString();
-    serialFreeString(ptr);
-    try {
-      final list = jsonDecode(json) as List;
-      return list
-          .map((e) => SerialPortInfo.fromJson(e as Map<String, dynamic>))
-          .toList();
-    } catch (_) {
-      return [];
+    final ports = <SerialPortInfo>[];
+    for (final name in SerialPort.availablePorts) {
+      ports.add(SerialPortInfo(name: name, description: ''));
     }
+    return ports;
   }
 
   /// 打开串口
