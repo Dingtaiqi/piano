@@ -21,16 +21,14 @@ class _SerialBarState extends ConsumerState<SerialBar> {
   String? _ffmpegDir;
 
   Future<void> _pickFfmpegDir() async {
-    final dir = await FilePicker.platform.getDirectoryPath();
-    if (dir == null || !mounted) return;
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.any,
+      allowMultiple: false,
+    );
+    if (result == null || result.files.isEmpty || !mounted) return;
 
-    final ffmpegName = Platform.isWindows ? 'ffmpeg.exe' : 'ffmpeg';
-    if (!File('$dir/$ffmpegName').existsSync()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('目录中未找到 $ffmpegName'), behavior: SnackBarBehavior.floating),
-      );
-      return;
-    }
+    final ffmpegPath = result.files.single.path!;
+    final dir = File(ffmpegPath).parent.path;
 
     AudioService.init(dir);
     setState(() => _ffmpegDir = dir);
