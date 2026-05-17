@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/serial_bar.dart';
-import '../widgets/file_picker_card.dart';
-import '../widgets/playback_controls.dart';
-import '../widgets/progress_bar.dart';
-import '../widgets/volume_slider.dart';
+import '../widgets/midi_card.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -19,13 +16,7 @@ class HomePage extends StatelessWidget {
         children: const [
           SerialBar(),
           SizedBox(height: 12),
-          FilePickerCard(),
-          SizedBox(height: 12),
-          PlaybackProgressBar(),
-          SizedBox(height: 12),
-          PlaybackControls(),
-          SizedBox(height: 12),
-          VolumeSlider(),
+          MidiCard(),
         ],
       ),
     );

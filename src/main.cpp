@@ -34,11 +34,23 @@ void setup() {
 }
 
 void loop() {
-  /* ========== PCM 音频流处理 (来自上位机) ========== */
+  /* ========== 上位机通信 ========== */
   pcmProcessSerial();
 
-  /* ========== 混音播放状态维护 (PCM 播放时跳过本地混音) ========== */
-  if (!pcmIsPlaying() && isMixPlaying) {
+  /* ========== 上位机旋律播放触发 ========== */
+  if (uploadedPlayPending) {
+    uploadedPlayPending = false;
+    setCurrentSong(SONG_UPLOADED);
+    autoPlayMode = true;
+    autoPlayIndex = -1;
+    currentNoteIndex = 0;
+    teachingMode = false;
+    autoPlayInterval = 500;
+    lastAutoPlayTime = millis();
+  }
+
+  /* ========== 混音播放状态维护 ========== */
+  if (isMixPlaying) {
     unsigned long currentMicros = micros();
     
     if (currentMicros - lastMixUpdate >= MIX_UPDATE_INTERVAL) {
@@ -118,7 +130,7 @@ void loop() {
           displayMultipleKeys(pressedKeys, keyCount);
         }
         
-        if (!pcmIsPlaying()) {
+        {
           if (keyCount > 0) {
             playMultipleNotes(pressedKeys, keyCount);
           } else {
@@ -200,7 +212,7 @@ void loop() {
           displayMultipleKeys(pressedKeys, keyCount);
         }
         
-        if (!pcmIsPlaying()) {
+        {
           if (keyCount > 0) {
             playMultipleNotes(pressedKeys, keyCount);
           } else {
@@ -223,12 +235,12 @@ void loop() {
         // 播放完成
         autoPlayMode = false;
         autoPlayIndex = 0;
-        if (!pcmIsPlaying()) stopAllAudio();
+        stopAllAudio();
       } else {
         // 播放下一个音符
         int* melody = getCurrentMelody();
         int keys[] = {melody[autoPlayIndex]};
-        if (!pcmIsPlaying()) playMultipleNotes(keys, 1);
+        playMultipleNotes(keys, 1);
         lastAutoPlayTime = currentTime;
       }
     }
@@ -243,7 +255,7 @@ void loop() {
     unsigned long interval = 60000 / metronomeBPM; // 计算节拍间隔(ms)
     if (currentTime - lastMetronomeTick >= interval) {
       // 播放节拍音 (短促的咔嗒声, PCM 播放时跳过)
-      if (!pcmIsPlaying()) tone(BUZZER_PIN, 1000, 50); // 1kHz, 50ms
+      tone(BUZZER_PIN, 1000, 50); // 1kHz, 50ms
       lastMetronomeTick = currentTime;
     }
   }

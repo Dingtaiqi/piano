@@ -1,10 +1,7 @@
-import 'dart:io';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/serial_port_info.dart';
 import '../providers/serial_provider.dart';
-import '../services/audio_service.dart';
 
 const defaultBaudRates = [921600, 460800, 230400, 115200, 9600];
 
@@ -18,31 +15,6 @@ class SerialBar extends ConsumerStatefulWidget {
 class _SerialBarState extends ConsumerState<SerialBar> {
   SerialPortInfo? _selectedPort;
   int _selectedBaud = 921600;
-  String? _ffmpegDir;
-
-  Future<void> _pickFfmpegDir() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.any,
-      allowMultiple: false,
-    );
-    if (result == null || result.files.isEmpty || !mounted) return;
-
-    final ffmpegPath = result.files.single.path!;
-    final dir = File(ffmpegPath).parent.path;
-
-    AudioService.init(dir);
-    setState(() => _ffmpegDir = dir);
-
-    if (!Platform.isWindows) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('如播放失败，终端执行:\nchmod +x ffmpeg && xattr -cr ffmpeg'),
-          duration: const Duration(seconds: 6),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,15 +27,12 @@ class _SerialBarState extends ConsumerState<SerialBar> {
     final connected = connectionState is SerialConnected ? connectionState : null;
     final connectedLabel = connected != null ? '${connected.portName} @ ${connected.baudRate}' : '';
 
-    final ffmpegOk = _ffmpegDir != null;
-
     return Card(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // 标题 + 状态
             Row(
               children: [
                 Icon(Icons.usb_rounded, color: isConnected ? cs.primary : cs.onSurfaceVariant, size: 18),
@@ -71,33 +40,26 @@ class _SerialBarState extends ConsumerState<SerialBar> {
                 Text('串口', style: Theme.of(context).textTheme.titleSmall),
                 const Spacer(),
                 if (isConnected) ...[
-                  Container(width: 8, height: 8,
-                    decoration: BoxDecoration(shape: BoxShape.circle, color: cs.primary)),
+                  Container(width: 8, height: 8, decoration: BoxDecoration(shape: BoxShape.circle, color: cs.primary)),
                   const SizedBox(width: 4),
                   Text(connectedLabel, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: cs.primary)),
                 ] else ...[
-                  Container(width: 8, height: 8,
-                    decoration: BoxDecoration(shape: BoxShape.circle, color: cs.error)),
+                  Container(width: 8, height: 8, decoration: BoxDecoration(shape: BoxShape.circle, color: cs.error)),
                   const SizedBox(width: 4),
                   Text('未连接', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: cs.error)),
                 ],
               ],
             ),
             const SizedBox(height: 8),
-
-            // 端口 + 波特率 + 按钮
             Row(
               children: [
                 Expanded(
                   flex: 3,
                   child: portsAsync.when(
                     data: (ports) => DropdownButtonFormField<SerialPortInfo>(
-                      value: _selectedPort,
-                      isExpanded: true, isDense: true,
-                      decoration: const InputDecoration(
-                        labelText: '端口', prefixIcon: Icon(Icons.cable_rounded, size: 20),
-                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      ),
+                      value: _selectedPort, isExpanded: true, isDense: true,
+                      decoration: const InputDecoration(labelText: '端口', prefixIcon: Icon(Icons.cable_rounded, size: 20),
+                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
                       items: ports.isEmpty ? null
                           : ports.map((p) => DropdownMenuItem(value: p, child: Text(p.name, overflow: TextOverflow.ellipsis))).toList(),
                       onChanged: isConnected ? null : (v) => setState(() => _selectedPort = v),
@@ -122,34 +84,10 @@ class _SerialBarState extends ConsumerState<SerialBar> {
                     : FilledButton(
                         onPressed: isConnected
                             ? () => ref.read(serialProvider.notifier).disconnect()
-                            : _selectedPort != null
-                                ? () => ref.read(serialProvider.notifier).connect(_selectedPort!.name, _selectedBaud)
-                                : null,
+                            : _selectedPort != null ? () => ref.read(serialProvider.notifier).connect(_selectedPort!.name, _selectedBaud) : null,
                         style: FilledButton.styleFrom(minimumSize: const Size(56, 40), padding: const EdgeInsets.symmetric(horizontal: 12)),
                         child: Icon(isConnected ? Icons.link_off_rounded : Icons.link_rounded, size: 20),
                       ),
-              ],
-            ),
-
-            // FFmpeg 路径
-            const Divider(height: 20),
-            Row(
-              children: [
-                Icon(Icons.music_note_rounded, color: ffmpegOk ? cs.primary : cs.onSurfaceVariant, size: 18),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    ffmpegOk ? _ffmpegDir!.split('/').last : '未设置 FFmpeg',
-                    style: Theme.of(context).textTheme.bodySmall,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                OutlinedButton(
-                  onPressed: _pickFfmpegDir,
-                  style: OutlinedButton.styleFrom(minimumSize: const Size(40, 32), padding: const EdgeInsets.symmetric(horizontal: 8)),
-                  child: Text(ffmpegOk ? '更换' : '选择', style: const TextStyle(fontSize: 12)),
-                ),
               ],
             ),
           ],

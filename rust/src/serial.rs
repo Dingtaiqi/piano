@@ -34,15 +34,16 @@ impl SerialHandle {
 
 /// 枚举可用串口，返回 JSON 数组字符串
 pub fn list_ports_json() -> Result<String> {
-    let ports: Vec<SerialPortInfo> = available_ports()?;
-    let list: Vec<serde_json::Value> = ports
-        .iter()
-        .map(|p| {
-            serde_json::json!({
-                "name": p.port_name,
-                "description": format!("{:?}", p.port_type),
-            })
-        })
-        .collect();
-    Ok(serde_json::json!(list).to_string())
+    let ports = available_ports()?;
+    let mut json = String::from("[");
+    for (i, p) in ports.iter().enumerate() {
+        if i > 0 { json.push(','); }
+        json.push_str(&format!(
+            r#"{{"name":"{}","description":"{:?}"}}"#,
+            p.port_name.replace('\\', "\\\\").replace('"', "\\\""),
+            p.port_type,
+        ));
+    }
+    json.push(']');
+    Ok(json)
 }
