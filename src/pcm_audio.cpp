@@ -53,7 +53,7 @@ static void handleFrame(uint8_t cmd, const uint8_t* payload, uint16_t len) {
         if (count > PCM_MAX_NOTES) count = PCM_MAX_NOTES;
         if (len < (uint16_t)(34 + count)) { sendNack(cmd, 0x03); break; }
 
-        setUploadedMelody((int8_t*)&payload[34], count, name);
+        setUploadedMelody(&payload[34], count, name);
         sendAck(cmd);
       }
       break;

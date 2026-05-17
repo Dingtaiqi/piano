@@ -22,7 +22,7 @@ int tigerMelody[] = {
 };
 int tigerMelodyCount = 32;
 
-int8_t uploadedMelody[512] = {0};
+int uploadedMelody[512] = {0};
 int uploadedMelodyCount = 0;
 char uploadedMelodyName[33] = "";
 volatile bool uploadedPlayPending = false;
@@ -30,7 +30,7 @@ volatile bool uploadedPlayPending = false;
 int currentSong = 0;
 
 int* getCurrentMelody() {
-  if (currentSong == SONG_UPLOADED) return (int*)uploadedMelody;
+  if (currentSong == SONG_UPLOADED) return uploadedMelody;
   return currentSong == SONG_TWINKLE ? twinkleMelody : tigerMelody;
 }
 
@@ -50,9 +50,11 @@ String getCurrentSongName() {
   return currentSong == SONG_TWINKLE ? "一闪一闪亮晶晶" : "两只老虎";
 }
 
-void setUploadedMelody(const int8_t* notes, int count, const char* name) {
+void setUploadedMelody(const uint8_t* notes, int count, const char* name) {
   if (count > 512) count = 512;
-  memcpy(uploadedMelody, notes, count);
+  for (int i = 0; i < count; i++) {
+    uploadedMelody[i] = notes[i];
+  }
   uploadedMelodyCount = count;
   strncpy(uploadedMelodyName, name, 32);
   uploadedMelodyName[32] = '\0';

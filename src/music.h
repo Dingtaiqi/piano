@@ -13,7 +13,7 @@ extern int tigerMelody[];
 extern int tigerMelodyCount;
 
 // 上位机传入的旋律
-extern int8_t uploadedMelody[];
+extern int uploadedMelody[];
 extern int uploadedMelodyCount;
 extern char uploadedMelodyName[];
 extern volatile bool uploadedPlayPending;
@@ -25,7 +25,7 @@ int getCurrentMelodyCount();
 void setCurrentSong(int songId);
 String getCurrentSongName();
 
-void setUploadedMelody(const int8_t* notes, int count, const char* name);
+void setUploadedMelody(const uint8_t* notes, int count, const char* name);
 void triggerUploadedPlayback();
 
 #endif
