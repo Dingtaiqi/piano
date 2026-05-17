@@ -7,13 +7,12 @@ use std::sync::Mutex;
 /// FFmpeg 可执行文件目录 (由 Dart 侧通过 FFI 设置)
 static FFMPEG_DIR: Mutex<Option<PathBuf>> = Mutex::new(None);
 
-/// 设置 ffmpeg/ffprobe 所在目录
 pub fn set_ffmpeg_dir(dir: String) {
     let mut guard = FFMPEG_DIR.lock().unwrap();
     *guard = Some(PathBuf::from(dir));
 }
 
-/// 获取 ffmpeg 可执行文件路径 (Windows: ffmpeg.exe, macOS/Linux: ffmpeg)
+/// 获取 ffmpeg 可执行文件路径
 fn ffmpeg_path() -> PathBuf {
     let name = if cfg!(target_os = "windows") { "ffmpeg.exe" } else { "ffmpeg" };
     if let Some(ref dir) = *FFMPEG_DIR.lock().unwrap() {
@@ -23,17 +22,11 @@ fn ffmpeg_path() -> PathBuf {
     }
 }
 
-/// 获取 ffprobe 可执行文件路径
-fn ffprobe_path() -> PathBuf {
-    let name = if cfg!(target_os = "windows") { "ffprobe.exe" } else { "ffprobe" };
-    if let Some(ref dir) = *FFMPEG_DIR.lock().unwrap() {
-        dir.join(name)
-    } else {
-        PathBuf::from(name)
-    }
+/// 获取空设备路径 (用于丢弃音频输出)
+fn null_device() -> &'static str {
+    if cfg!(target_os = "windows") { "NUL" } else { "/dev/null" }
 }
 
-/// 通过 FFI 传递给 Dart 的解码器信息结构体
 #[repr(C)]
 pub struct DecoderInfo {
     pub sample_rate: u32,
@@ -42,7 +35,6 @@ pub struct DecoderInfo {
     pub channels: u8,
 }
 
-/// FFmpeg 流式解码器
 pub struct AudioDecoder {
     child: Child,
     reader: BufReader<Box<dyn Read + Send>>,
@@ -53,7 +45,6 @@ pub struct AudioDecoder {
 impl AudioDecoder {
     pub fn open<P: AsRef<Path>>(path: P, target_rate: u32) -> Result<Self> {
         let path_str = path.as_ref().to_string_lossy().to_string();
-
         let info = get_audio_info(&path_str)?;
 
         let mut child = Command::new(ffmpeg_path())
@@ -70,11 +61,9 @@ impl AudioDecoder {
             .stdout(Stdio::piped())
             .stderr(Stdio::null())
             .spawn()
-            .map_err(|e| {
-                AppError::Decode(format!(
-                    "无法启动 ffmpeg (请确认 ffmpeg 目录设置正确): {}", e
-                ))
-            })?;
+            .map_err(|e| AppError::Decode(format!(
+                "无法启动 ffmpeg: {}", e
+            )))?;
 
         let stdout = child.stdout.take().ok_or_else(|| {
             AppError::Decode("无法获取 ffmpeg stdout".into())
@@ -83,8 +72,7 @@ impl AudioDecoder {
         let reader = BufReader::with_capacity(8192, Box::new(stdout) as Box<dyn Read + Send>);
 
         Ok(AudioDecoder {
-            child,
-            reader,
+            child, reader,
             info: DecoderInfo {
                 sample_rate: target_rate,
                 total_samples: info.total_samples,
@@ -98,7 +86,6 @@ impl AudioDecoder {
     pub fn read(&mut self, buf: &mut [u8], max_samples: usize) -> Result<usize> {
         let target = max_samples.min(buf.len());
         let mut total = 0usize;
-
         while total < target {
             match self.reader.read(&mut buf[total..target]) {
                 Ok(0) => break,
@@ -107,7 +94,6 @@ impl AudioDecoder {
                 Err(e) => return Err(AppError::Decode(format!("FFmpeg read error: {}", e))),
             }
         }
-
         self.samples_read += total as u64;
         Ok(total)
     }
@@ -124,26 +110,28 @@ impl Drop for AudioDecoder {
     }
 }
 
-/// ffprobe 获取音频元数据
+/// 使用 ffmpeg 获取音频元数据 (无需 ffprobe)
 fn get_audio_info(path: &str) -> Result<DecoderInfo> {
-    let output = Command::new(ffprobe_path())
+    let null = null_device();
+    let output = Command::new(ffmpeg_path())
         .args([
             "-v", "quiet",
             "-print_format", "json",
             "-show_format",
             "-show_streams",
-            path,
+            "-i", path,
+            "-f", "null", null,
         ])
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::null())
         .output()
         .map_err(|e| AppError::Decode(format!(
-            "无法启动 ffprobe (请确认 ffmpeg 目录设置正确): {}", e
+            "无法启动 ffmpeg: {}", e
         )))?;
 
     if !output.status.success() {
-        return Err(AppError::Decode("ffprobe 执行失败".into()));
+        return Err(AppError::Decode("ffmpeg 执行失败".into()));
     }
 
     let stdout = String::from_utf8_lossy(&output.stdout);

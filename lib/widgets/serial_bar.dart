@@ -22,18 +22,27 @@ class _SerialBarState extends ConsumerState<SerialBar> {
 
   Future<void> _pickFfmpegDir() async {
     final dir = await FilePicker.platform.getDirectoryPath();
-    if (dir != null && mounted) {
-      final ffmpegName = Platform.isWindows ? 'ffmpeg.exe' : 'ffmpeg';
-      if (File('$dir/$ffmpegName').existsSync()) {
-        AudioService.init(dir);
-        setState(() => _ffmpegDir = dir);
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('目录中找不到 $ffmpegName'), behavior: SnackBarBehavior.floating),
-          );
-        }
-      }
+    if (dir == null || !mounted) return;
+
+    final ffmpegName = Platform.isWindows ? 'ffmpeg.exe' : 'ffmpeg';
+    if (!File('$dir/$ffmpegName').existsSync()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('目录中未找到 $ffmpegName'), behavior: SnackBarBehavior.floating),
+      );
+      return;
+    }
+
+    AudioService.init(dir);
+    setState(() => _ffmpegDir = dir);
+
+    if (!Platform.isWindows) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('如播放失败，终端执行:\nchmod +x ffmpeg && xattr -cr ffmpeg'),
+          duration: const Duration(seconds: 6),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 

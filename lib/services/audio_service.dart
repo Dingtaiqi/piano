@@ -25,15 +25,11 @@ class AudioDecoderHandle {
 }
 
 class AudioService {
-  static bool _initialized = false;
-
-  /// 初始化 FFmpeg 目录，必须在 open 之前调用
+  /// 初始化 FFmpeg 目录，必须在 open 之前调用。可重复调用切换路径。
   static void init(String ffmpegDir) {
-    if (_initialized) return;
     final ptr = ffmpegDir.toNativeUtf8();
     decoderSetFfmpegDir(ptr);
     calloc.free(ptr);
-    _initialized = true;
   }
 
   static AudioDecoderHandle open(String filePath, {int targetRate = 16000}) {
@@ -42,8 +38,10 @@ class AudioService {
     calloc.free(pathPtr);
 
     if (handle == nullptr) {
-      throw Exception('无法打开音频文件: $filePath\n'
-          '请确认 ffmpeg 已安装并加入 PATH 环境变量');
+      throw Exception('ffmpeg 启动失败。请确认:\n'
+          '1. 已选择 ffmpeg 所在目录\n'
+          '2. 终端执行 chmod +x ffmpeg ffprobe\n'
+          '3. 终端执行 xattr -cr ffmpeg ffprobe');
     }
 
     final infoPtr = calloc.allocate<DecoderInfo>(sizeOf<DecoderInfo>());
