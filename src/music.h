@@ -19,6 +19,7 @@ extern char uploadedMelodyName[];
 extern volatile bool uploadedPlayPending;
 
 extern int currentSong;
+extern bool serialTeachingActive;
 
 int* getCurrentMelody();
 int getCurrentMelodyCount();

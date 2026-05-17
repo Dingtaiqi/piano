@@ -5,7 +5,7 @@
 #include "display.h"
 #include "network.h"
 #include "music.h"
-#include "pcm_audio.h"
+#include "serial_proto.h"
 #include "pic.cpp"
 
 void setup() {
@@ -13,7 +13,7 @@ void setup() {
 
   // 初始化各个模块
   initAudio();
-  pcmInit();
+  serialProtoInit();
   initTouch();
   initDisplay();
   initNetwork();
@@ -35,7 +35,7 @@ void setup() {
 
 void loop() {
   /* ========== 上位机通信 ========== */
-  pcmProcessSerial();
+  serialProtoProcess();
 
   /* ========== 上位机旋律播放触发 ========== */
   if (uploadedPlayPending) {
@@ -89,20 +89,26 @@ void loop() {
           int* melody = getCurrentMelody();
           int melodyCount = getCurrentMelodyCount();
           int expectedNote = melody[currentNoteIndex];
+          uint16_t expectedIndex = currentNoteIndex;
           if (expectedNote == 0) {
             // 跳过休止符
             currentNoteIndex++;
+            expectedIndex = currentNoteIndex;
             if (currentNoteIndex < melodyCount) {
               expectedNote = melody[currentNoteIndex];
             }
           }
-          
+
           if (keyCount == 1 && pressedKeys[0] == expectedNote) {
             // 按对了
             currentNoteIndex++;
             if (currentNoteIndex >= melodyCount) {
               showTeachingMode(0, true, "Complete!");
               teachingMode = false;
+              if (serialTeachingActive) {
+                sendTeachEvent(TEACH_COMPLETE, expectedIndex, melodyCount, expectedNote);
+                serialTeachingActive = false;
+              }
             } else {
               int nextNote = melody[currentNoteIndex];
               if (nextNote == 0 && currentNoteIndex + 1 < melodyCount) {
@@ -110,10 +116,17 @@ void loop() {
                 nextNote = melody[currentNoteIndex];
               }
               showTeachingMode(nextNote, true, "Good!");
+              if (serialTeachingActive) {
+                sendTeachEvent(TEACH_CORRECT, expectedIndex, melodyCount, expectedNote);
+                sendTeachEvent(TEACH_SHOW_NOTE, currentNoteIndex, melodyCount, nextNote);
+              }
             }
           } else {
             // 按错了
             showTeachingMode(expectedNote, false, "Error!");
+            if (serialTeachingActive) {
+              sendTeachEvent(TEACH_WRONG, expectedIndex, melodyCount, expectedNote);
+            }
           }
         } else if (teachingMode) {
           // 教学模式但没有按键，显示下一个要按的键
@@ -171,20 +184,26 @@ void loop() {
           int* melody = getCurrentMelody();
           int melodyCount = getCurrentMelodyCount();
           int expectedNote = melody[currentNoteIndex];
+          uint16_t expectedIndex = currentNoteIndex;
           if (expectedNote == 0) {
             // 跳过休止符
             currentNoteIndex++;
+            expectedIndex = currentNoteIndex;
             if (currentNoteIndex < melodyCount) {
               expectedNote = melody[currentNoteIndex];
             }
           }
-          
+
           if (keyCount == 1 && pressedKeys[0] == expectedNote) {
             // 按对了
             currentNoteIndex++;
             if (currentNoteIndex >= melodyCount) {
               showTeachingMode(0, true, "Complete!");
               teachingMode = false;
+              if (serialTeachingActive) {
+                sendTeachEvent(TEACH_COMPLETE, expectedIndex, melodyCount, expectedNote);
+                serialTeachingActive = false;
+              }
             } else {
               int nextNote = melody[currentNoteIndex];
               if (nextNote == 0 && currentNoteIndex + 1 < melodyCount) {
@@ -192,10 +211,17 @@ void loop() {
                 nextNote = melody[currentNoteIndex];
               }
               showTeachingMode(nextNote, true, "Good!");
+              if (serialTeachingActive) {
+                sendTeachEvent(TEACH_CORRECT, expectedIndex, melodyCount, expectedNote);
+                sendTeachEvent(TEACH_SHOW_NOTE, currentNoteIndex, melodyCount, nextNote);
+              }
             }
           } else {
             // 按错了
             showTeachingMode(expectedNote, false, "Error!");
+            if (serialTeachingActive) {
+              sendTeachEvent(TEACH_WRONG, expectedIndex, melodyCount, expectedNote);
+            }
           }
         } else if (teachingMode) {
           // 教学模式但没有按键，显示下一个要按的键
@@ -254,7 +280,7 @@ void loop() {
     unsigned long currentTime = millis();
     unsigned long interval = 60000 / metronomeBPM; // 计算节拍间隔(ms)
     if (currentTime - lastMetronomeTick >= interval) {
-      // 播放节拍音 (短促的咔嗒声, PCM 播放时跳过)
+      // 播放节拍音 (短促的咔嗒声)
       tone(BUZZER_PIN, 1000, 50); // 1kHz, 50ms
       lastMetronomeTick = currentTime;
     }

@@ -28,6 +28,7 @@ char uploadedMelodyName[33] = "";
 volatile bool uploadedPlayPending = false;
 
 int currentSong = 0;
+bool serialTeachingActive = false;
 
 int* getCurrentMelody() {
   if (currentSong == SONG_UPLOADED) return uploadedMelody;
