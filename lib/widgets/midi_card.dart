@@ -3,6 +3,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/protocol.dart';
+import '../pages/home_page.dart';
 import '../providers/serial_provider.dart';
 import '../services/midi_service.dart';
 
@@ -54,9 +55,14 @@ class _MidiCardState extends ConsumerState<MidiCard> {
       payload[33] = notes.length & 0xFF;
       payload.setAll(34, notes);
 
-      svc.write(buildFrame(0x10, payload));
-      await Future.delayed(const Duration(milliseconds: 100));
-      svc.write(buildFrame(0x11, Uint8List(0)));
+      final frame1 = buildFrame(0x10, payload);
+      addDebugLog(ref, '发送 MELODY: ${frame1.length} 字节, payload=${payload.length}B');
+      svc.write(frame1);
+      await Future.delayed(const Duration(milliseconds: 200));
+
+      final frame2 = buildFrame(0x11, Uint8List(0));
+      addDebugLog(ref, '发送 PLAY');
+      svc.write(frame2);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

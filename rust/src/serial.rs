@@ -1,5 +1,5 @@
 use crate::error::Result;
-use serialport::{available_ports, SerialPort, SerialPortInfo};
+use serialport::{available_ports, DataBits, FlowControl, Parity, SerialPort, StopBits};
 use std::io::{Read, Write};
 use std::time::Duration;
 
@@ -10,9 +10,13 @@ pub struct SerialHandle {
 impl SerialHandle {
     pub fn open(port_name: &str, baud_rate: u32) -> Result<Self> {
         let port = serialport::new(port_name, baud_rate)
+            .data_bits(DataBits::Eight)
+            .stop_bits(StopBits::One)
+            .parity(Parity::None)
+            .flow_control(FlowControl::None)
             .timeout(Duration::from_millis(50))
-            .open()?;
-        Ok(SerialHandle { port })
+            .open_native()?;
+        Ok(SerialHandle { port: Box::new(port) })
     }
 
     pub fn write_all(&mut self, data: &[u8]) -> Result<usize> {
