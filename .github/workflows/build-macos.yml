@@ -34,17 +34,6 @@ jobs:
             target/aarch64-apple-darwin/release/libpiano_native.dylib \
             -output target/release/libpiano_native.dylib
 
-      # ---- FFmpeg ----
-      - name: Install ffmpeg
-        run: brew install ffmpeg
-
-      - name: Copy ffmpeg binaries
-        run: |
-          mkdir -p ffmpeg
-          cp "$(readlink -f "$(which ffmpeg)")" ffmpeg/ffmpeg
-          cp "$(readlink -f "$(which ffprobe)")" ffmpeg/ffprobe
-          chmod +x ffmpeg/ffmpeg ffmpeg/ffprobe
-
       # ---- Flutter ----
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -61,11 +50,9 @@ jobs:
         run: flutter build macos --release
 
       # ---- 打包 ----
-      - name: Copy files into app bundle
+      - name: Copy dylib into app bundle
         run: |
           APP="build/macos/Build/Products/Release/eda_piano.app"
-          cp ffmpeg/ffmpeg "$APP/Contents/MacOS/"
-          cp ffmpeg/ffprobe "$APP/Contents/MacOS/"
           cp rust/target/release/libpiano_native.dylib "$APP/Contents/MacOS/"
 
       - name: Package app

@@ -112,7 +112,8 @@ void pcmInit() {
   analogWriteRange(PWM_RANGE);
   analogWrite(BUZZER_PIN, 128); // 初始静音(中点)
 
-  // 定时器按需启动(收到 PLAY 命令时)，避免空闲时干扰 I2C/OLED
+  // 启动 16kHz 采样率定时器
+  sampleTimer.attach_ms(1000.0 / PCM_SAMPLE_RATE, onPcmSampleTick);
 }
 
 // ===== 命令处理 =====
@@ -185,8 +186,8 @@ static void handleFrame(uint8_t cmd, const uint8_t* payload, uint16_t len) {
 void pcmProcessSerial() {
   static unsigned long lastReadyTime = 0;
 
-  // 播放中每 200ms 上报缓冲区状态，空闲时不发避免阻塞 Serial
-  if (playing && millis() - lastReadyTime > 200) {
+  // 每 200ms 上报缓冲区状态
+  if (millis() - lastReadyTime > 200) {
     sendReady();
     lastReadyTime = millis();
   }
