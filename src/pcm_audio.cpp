@@ -8,7 +8,7 @@ static ParseState parseState = WAIT_SYNC1;
 static uint8_t rxCmd = 0;
 static uint16_t rxPayloadLen = 0;
 static uint16_t rxPayloadIdx = 0;
-static uint8_t rxPayloadBuf[600]; // 32 name + 2 count + 512 notes + margin
+static uint8_t rxPayloadBuf[600]; // 32 name + 2 count + 512 notes + margin = 546 max
 
 // ===== CRC8 =====
 static uint8_t crc8(const uint8_t* data, size_t len) {

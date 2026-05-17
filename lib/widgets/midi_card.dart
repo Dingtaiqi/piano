@@ -42,7 +42,11 @@ class _MidiCardState extends ConsumerState<MidiCard> {
     try {
       final svc = ref.read(serialProvider.notifier).service;
       final name = _melody!.name;
-      final notes = _melody!.notes;
+      var notes = _melody!.notes;
+      if (notes.length > 512) {
+        notes = notes.sublist(0, 512);
+        addDebugLog(ref, '截断: ${_melody!.noteCount} → 512 音符');
+      }
 
       final nameBytes = Uint8List(32);
       for (int i = 0; i < name.length && i < 32; i++) {
