@@ -68,3 +68,27 @@ typedef SerialFreeStringDart = void Function(Pointer<Utf8>);
 final SerialFreeStringDart serialFreeString =
     _lib.lookupFunction<SerialFreeStringNative, SerialFreeStringDart>('serial_free_string');
 
+// ============================================================
+// MIDI FFI
+// ============================================================
+
+final class MidiResult extends Struct {
+  external Pointer<Uint8> notes;
+
+  @Uint32()
+  external int noteCount;
+
+  @Array(64)
+  external Array<Uint8> name;
+}
+
+typedef MidiParseFileNative = Pointer<MidiResult> Function(Pointer<Utf8>);
+typedef MidiParseFileDart = Pointer<MidiResult> Function(Pointer<Utf8>);
+final MidiParseFileDart midiParseFile =
+    _lib.lookupFunction<MidiParseFileNative, MidiParseFileDart>('midi_parse_file');
+
+typedef MidiFreeResultNative = Void Function(Pointer<MidiResult>);
+typedef MidiFreeResultDart = void Function(Pointer<MidiResult>);
+final MidiFreeResultDart midiFreeResult =
+    _lib.lookupFunction<MidiFreeResultNative, MidiFreeResultDart>('midi_free_result');
+

@@ -9,3 +9,4 @@ crate-type = ["cdylib"]
 [dependencies]
 serialport = "4.9"
 thiserror = "2"
+midly = "0.5"

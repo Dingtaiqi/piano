@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -24,16 +23,14 @@ class _MidiCardState extends ConsumerState<MidiCard> {
     );
     if (result == null || result.files.isEmpty || !mounted) return;
 
-    final path = result.files.single.path!;
-    final data = File(path).readAsBytesSync();
-    final melody = MidiService.parse(path, data);
-    setState(() => _melody = melody);
-
-    if (melody.noteCount == 0 && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('未提取到音符'), behavior: SnackBarBehavior.floating),
+    final melody = MidiService.parse(result.files.single.path!);
+    if (melody == null) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('MIDI 解析失败'), behavior: SnackBarBehavior.floating),
       );
+      return;
     }
+    setState(() => _melody = melody);
   }
 
   Future<void> _send() async {

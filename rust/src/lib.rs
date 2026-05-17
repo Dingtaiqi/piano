@@ -1,7 +1,9 @@
 mod error;
+mod midi;
 mod protocol;
 mod serial;
 
+use midi::MidiResult;
 use serial::SerialHandle;
 use std::ffi::{c_char, CStr, CString};
 use std::sync::Mutex;
@@ -88,4 +90,34 @@ pub extern "C" fn serial_close(handle: *mut std::ffi::c_void) {
 #[no_mangle]
 pub extern "C" fn serial_free_string(s: *mut c_char) {
     if !s.is_null() { unsafe { let _ = CString::from_raw(s); } }
+}
+
+// ============================================================
+// MIDI FFI
+// ============================================================
+
+/// 解析 MIDI 文件，返回堆分配的 MidiResult (Dart 侧需用 midi_free_result 释放)
+#[no_mangle]
+pub extern "C" fn midi_parse_file(path: *const c_char) -> *mut MidiResult {
+    let path_str = unsafe {
+        if path.is_null() { return std::ptr::null_mut(); }
+        match CStr::from_ptr(path).to_str() { Ok(s) => s.to_string(), Err(_) => return std::ptr::null_mut() }
+    };
+    match midi::parse_midi(&path_str) {
+        Ok(result) => Box::into_raw(Box::new(result)),
+        Err(_) => std::ptr::null_mut(),
+    }
+}
+
+/// 释放 midi_parse_file 返回的结果
+#[no_mangle]
+pub extern "C" fn midi_free_result(ptr: *mut MidiResult) {
+    if !ptr.is_null() {
+        unsafe {
+            let result = Box::from_raw(ptr);
+            if !result.notes.is_null() {
+                drop(Vec::from_raw_parts(result.notes, result.note_count as usize, result.note_count as usize));
+            }
+        }
+    }
 }
